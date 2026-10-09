@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Management System</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f1f5f9;
+            margin: 0;
+            padding: 30px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        h1, h2 {
+            color: #1d4ed8;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        input {
+            width: 95%;
+            padding: 10px;
+            margin: 8px 0 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        button {
+            background: #2563eb;
+            color: white;
+            padding: 10px 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px 5px 5px 0;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+
+        th {
+            background: #dbeafe;
+        }
+
+        #message {
+            margin-top: 15px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Student Management System</h1>
+
+        <h2>Add New Student</h2>
+
+        <form id="studentForm">
+            <label for="name">Student Name</label>
+            <input
+                type="text"
+                id="name"
+                placeholder="Enter student name"
+                required
+            >
+
+            <label for="course">Course</label>
+            <input
+                type="text"
+                id="course"
+                placeholder="Enter course name"
+                required
+            >
+
+            <button type="submit">Add Student</button>
+        </form>
+
+        <hr>
+
+        <h2>Student Records</h2>
+
+        <button onclick="loadStudents()">Refresh Students</button>
+
+        <p id="message">Loading student records...</p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Course</th>
+                </tr>
+            </thead>
+
+            <tbody id="studentTable"></tbody>
+        </table>
+    </div>
+
+    <script>
+        async function loadStudents() {
+            const message = document.getElementById("message");
+            const table = document.getElementById("studentTable");
+
+            message.textContent = "Loading students...";
+            table.innerHTML = "";
+
+            try {
+                const response = await fetch("/students");
+
+                if (!response.ok) {
+                    throw new Error("Unable to load student records");
+                }
+
+                const students = await response.json();
+
+                students.forEach(student => {
+                    const row = document.createElement("tr");
+
+                    [student.id, student.name, student.course].forEach(value => {
+                        const cell = document.createElement("td");
+                        cell.textContent = value;
+                        row.appendChild(cell);
+                    });
+
+                    table.appendChild(row);
+                });
+
+                message.textContent =
+                    students.length + " student records loaded.";
+
+            } catch (error) {
+                message.textContent =
+                    "Could not load students. Check the backend server.";
+            }
+        }
+
+        document.getElementById("studentForm").addEventListener(
+            "submit",
+            async function(event) {
+                event.preventDefault();
+
+                const name = document.getElementById("name").value.trim();
+                const course = document.getElementById("course").value.trim();
+                const message = document.getElementById("message");
+
+                if (!name || !course) {
+                    message.textContent =
+                        "Please enter both student name and course.";
+                    return;
+                }
+
+                try {
+                    const response = await fetch("/students", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({ name, course })
+                    });
+
+                    const result = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(result.error || "Unable to add student");
+                    }
+
+                    document.getElementById("studentForm").reset();
+
+                    await loadStudents();
+
+                    message.textContent =
+                        "Student added successfully! ID: " + result.id;
+
+                } catch (error) {
+                    message.textContent = error.message;
+                }
+            }
+        );
+
+        loadStudents();
+    </script>
+</body>
+</html>
